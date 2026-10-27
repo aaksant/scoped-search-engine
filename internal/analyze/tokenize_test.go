@@ -11,10 +11,10 @@ func TestTokenize(t *testing.T) {
 		in   string
 		want []string
 	}{
-		{"punctuation", "Hello, World!", []string{"hello", "world"}},
-		{"punctuation", "net/http", []string{"net", "http"}},
+		{"standard punctuation", "Hello, World!", []string{"hello", "world"}},
+		{"slash separator", "net/http", []string{"net", "http"}},
 		{
-			"punctuation",
+			"mixed symbols and numbers",
 			"You’ll use Gin (v1.7).",
 			[]string{"you", "ll", "use", "gin", "v1", "7"},
 		},
