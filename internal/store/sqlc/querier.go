@@ -9,6 +9,9 @@ import (
 )
 
 type Querier interface {
+	ListDocuments(ctx context.Context) ([]Document, error)
+	// Same URL will be crawled more than once,
+	// each time database has to handle a row that may already exist.
 	UpsertDocument(ctx context.Context, arg UpsertDocumentParams) error
 }
 

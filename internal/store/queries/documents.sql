@@ -8,3 +8,7 @@ ON CONFLICT(url) DO UPDATE SET
     headings = excluded.headings,
     body = excluded.body,
     crawled_at = CURRENT_TIMESTAMP;
+
+-- name: ListDocuments :many
+SELECT * FROM documents
+ORDER BY id ASC;

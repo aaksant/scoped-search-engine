@@ -9,6 +9,41 @@ import (
 	"context"
 )
 
+const listDocuments = `-- name: ListDocuments :many
+SELECT id, url, title, headings, body, crawled_at FROM documents
+ORDER BY id ASC
+`
+
+func (q *Queries) ListDocuments(ctx context.Context) ([]Document, error) {
+	rows, err := q.db.QueryContext(ctx, listDocuments)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Document{}
+	for rows.Next() {
+		var i Document
+		if err := rows.Scan(
+			&i.ID,
+			&i.Url,
+			&i.Title,
+			&i.Headings,
+			&i.Body,
+			&i.CrawledAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertDocument = `-- name: UpsertDocument :exec
 INSERT INTO documents (url, title, headings, body)
 VALUES (?, ?, ?, ?)
@@ -26,6 +61,8 @@ type UpsertDocumentParams struct {
 	Body     string `json:"body"`
 }
 
+// Same URL will be crawled more than once,
+// each time database has to handle a row that may already exist.
 func (q *Queries) UpsertDocument(ctx context.Context, arg UpsertDocumentParams) error {
 	_, err := q.db.ExecContext(ctx, upsertDocument,
 		arg.Url,
