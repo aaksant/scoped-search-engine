@@ -14,6 +14,7 @@ var stopwords = []string{
 	"this", "that", "these", "those", "it", "its", "you", "your", "we", "our",
 	"will", "can",
 	"s", "t", "ll", "ve", "re", "d", "m",
+	"what", "who", "why", "when", "how", "where", "do", "does",
 }
 var stopwordsSet = toSet(stopwords)
 
