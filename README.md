@@ -11,10 +11,10 @@ The project serves as a hands-on exploration of web crawling, information retrie
 - [x] crawl pages from seed URL
 - [x] integrate database (`documents` table)
 - [x] analyze page content (tokenize, stopwords removal)
-- [ ] in-memory inverted index (term → postings)     
-- [ ] load documents from the store and build the index (`cmd/index`)
-- [ ] save/load an index snapshot
-- [ ] query CLI (`cmd/search`): analyze the query, look up terms
+- [x] in-memory inverted index (term → postings)     
+- [x] load documents from the store and build the index (`cmd/index`)
+- [x] save/load an index snapshot
+- [x] query CLI (`cmd/search`): analyze the query, look up terms
 - [ ] ranking: TF-IDF, then BM25
 
 ## Planned Architecture
@@ -117,3 +117,112 @@ Certain words that might appear in generic stopword lists are intentionally reta
 The stopword list is convenient to maintain as a slice, but checking every token against that slice would require scanning the list repeatedly.
 
 Converting the list into a set allows membership checks to take expected constant time, making stopword filtering more efficient as the text grows.
+
+## `internal/index`
+The `index` package builds an inverted index from stored documents. It transforms document content into searchable terms, counts their occurrences, and maps each term to the documents containing it.
+
+The package also stores document length metadata, which can be used by the ranking algorithm.
+
+### How it works
+
+1. **Initialize the index.** Create an empty index containing maps for postings and document lengths.
+2. **Transform document content.** Process the title, headings, and body through the `analyze` package.
+3. **Apply field weighting.** Repeat title tokens three times and heading tokens twice, while body tokens retain their original frequency.
+4. **Count term occurrences.** Group tokens by term and calculate their frequency within each document.
+5. **Build postings.** Associate each unique term with a posting containing the document ID and its term frequency.
+6. **Record document length.** Store the total number of transformed tokens for each document.
+7. **Repeat for remaining documents.** Continue until all supplied documents have been indexed.
+
+### Data structure
+#### `Posting`
+```
+type Posting struct {
+    DocID int64
+    TF    int
+}
+```
+`Posting` represents the occurrence of a term in a particular document.
+
+|Property|Description |
+|--|--|
+| `DocID` | ID of the document containing the term |
+| `TF` | Number of occurrences of the term in that document |
+
+#### `Index`
+```
+type Index struct {
+    Postings map[string][]Posting
+    DocLen   map[int64]int
+}
+```
+`Index` stores the inverted index and document metadata.
+
+|Property|Description |
+|--|--|
+| `Postings` | Maps each term to its list of document postings |
+| `DocLen` | Maps each document ID to its total token count |
+
+### Example
+Suppose two documents produce these tokens:
+```
+Document 1: ["go", "search", "engine"]
+Document 2: ["go", "search", "index"]
+```
+
+The resulting inverted index looks like this:
+```
+Postings
+│
+├── "go"
+│   ├── DocID: 1, TF: 1
+│   └── DocID: 2, TF: 1
+│
+├── "search"
+│   ├── DocID: 1, TF: 1
+│   └── DocID: 2, TF: 1
+│
+├── "engine"
+│   └── DocID: 1, TF: 1
+│
+└── "index"
+    └── DocID: 2, TF: 1
+
+DocLen
+│
+├── DocID: 1 → 3
+└── DocID: 2 → 3
+```
+
+### Why use an inverted index?
+A straightforward search implementation could scan every document and check whether its content contains a query term.
+
+However, this becomes increasingly expensive as the document collection grows.
+
+An inverted index reverses the relationship: instead of mapping documents to their terms, it maps terms to the documents containing them.
+
+This allows the search engine to retrieve candidate documents through direct term lookups.
+
+### Why store term frequency?
+Term frequency (`TF`) represents how often a term occurs in a document.
+
+A term appearing multiple times may indicate that the document is more relevant to that term.
+
+The `TF` field provides this information for subsequent ranking algorithms.
+
+### Why store document length?
+Document length records the total number of tokens in a document.
+
+It is useful for ranking algorithms that account for document length, particularly BM25, which adjusts term relevance based on document length relative to the collection average.
+
+### Why weight document fields?
+Not all document fields carry the same importance.
+
+A term appearing in a title is often more representative of the document's topic than a term appearing only in its body.
+
+The current implementation uses repetition as a simple weighting mechanism.
+
+- Title: 3 times.
+- Headings: 2 times.
+- Body: 1 time.
+
+This increases the term frequency of terms appearing in more important fields without introducing a separate scoring mechanism.
