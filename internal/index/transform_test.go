@@ -47,11 +47,11 @@ func TestTransformDocumentToTokens(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := TransformDocumentToTokens(tt.title, tt.body, tt.headings)
-			if !slices.Equal(got, tt.want) {
-				t.Errorf("got: %q, want %q", got, tt.want)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := TransformDocumentToTokens(test.title, test.body, test.headings)
+			if !slices.Equal(got, test.want) {
+				t.Errorf("got: %q, want %q", got, test.want)
 			}
 		})
 	}

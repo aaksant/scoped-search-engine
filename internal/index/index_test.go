@@ -77,17 +77,17 @@ func TestIndexAdd(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			indexer := New()
-			for _, d := range tt.docs {
+			for _, d := range test.docs {
 				indexer.Add(d.docID, d.tokens)
 			}
-			if !reflect.DeepEqual(indexer.Postings, tt.expectedPostings) {
-				t.Errorf("Index.Postings: %v, want: %v", indexer.Postings, tt.expectedPostings)
+			if !reflect.DeepEqual(indexer.Postings, test.expectedPostings) {
+				t.Errorf("Index.Postings: %v, want: %v", indexer.Postings, test.expectedPostings)
 			}
-			if !reflect.DeepEqual(indexer.DocLen, tt.expectedDocLen) {
-				t.Errorf("Index.DocLen: %v, want: %v", indexer.DocLen, tt.expectedDocLen)
+			if !reflect.DeepEqual(indexer.DocLen, test.expectedDocLen) {
+				t.Errorf("Index.DocLen: %v, want: %v", indexer.DocLen, test.expectedDocLen)
 			}
 		})
 	}
